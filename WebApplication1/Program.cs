@@ -1,25 +1,40 @@
-using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Json;
 
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Verbose()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.File(
+        new JsonFormatter(renderMessage: true, formatProvider: CultureInfo.InvariantCulture),
+        "logs/log-.jsonl",
+        encoding: Encoding.UTF8)
+    .CreateBootstrapLogger();
 var builder = WebApplication.CreateBuilder(args);
 
 try
 {
     using var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-    Debug.WriteLine("Opening store");
+    Log.Logger.Debug("Opening store");
     store.Open(OpenFlags.ReadOnly); // <---------------------- error should occur here
-    Debug.WriteLine("Store opened");
+    Log.Logger.Debug("Store opened");
     var certs = store.Certificates;
     foreach (var cert in certs)
     {
-        Console.WriteLine(
-            $"Subject: {cert.Subject}, Thumbprint: {cert.Thumbprint}, FriendlyName: {cert.FriendlyName}, Issuer: {cert.Issuer}");
+        Log.Logger.Information(
+            "Subject: {Subject}, Thumbprint: {Thumbprint}, FriendlyName: {FriendlyName}, Issuer: {Issuer}",
+            cert.Subject, cert.Thumbprint, cert.FriendlyName, cert.Issuer);
     }
 }
 
 catch (Exception e)
 {
-    Console.Error.WriteLine(e);
+    Log.Logger.Fatal(e, "Error has occurred");
     throw;
 }
 
@@ -28,9 +43,9 @@ catch (Exception e)
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSerilog(Log.Logger);
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

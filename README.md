@@ -7,4 +7,4 @@
 
 1. `dotnet publish WebApplication1 -o publish`
 2. Deploy `publish` folder to target machine IIS
-3. Observe the issue
+3. Observe the issue in the logs folder
