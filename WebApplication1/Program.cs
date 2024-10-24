@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Serilog;
 using Serilog.Events;
+using Serilog.Exceptions;
 using Serilog.Formatting.Json;
 
 Log.Logger = new LoggerConfiguration()
@@ -10,9 +11,10 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
     .Enrich.FromLogContext()
+    .Enrich.WithExceptionDetails()
     .WriteTo.File(
         new JsonFormatter(renderMessage: true, formatProvider: CultureInfo.InvariantCulture),
-        "logs/log-.jsonl",
+        "logs/log.jsonl",
         encoding: Encoding.UTF8)
     .CreateBootstrapLogger();
 var builder = WebApplication.CreateBuilder(args);
